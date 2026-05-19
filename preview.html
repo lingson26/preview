@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>독서실 좌석 추첨 프로그램</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Pretendard, Arial, sans-serif;
+      background: #f4f6fb;
+      color: #1f2937;
+    }
+
+    .wrap {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #172554, #2563eb);
+      color: #fff;
+      padding: 30px;
+      border-radius: 24px;
+      box-shadow: 0 16px 42px rgba(37, 99, 235, 0.24);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 0;
+      opacity: 0.92;
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .feature-chip {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 370px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 19px;
+      letter-spacing: -0.03em;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 18px 0 10px;
+      font-weight: 900;
+    }
+
+    .step:first-of-type { margin-top: 0; }
+
+    .badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #2563eb;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex: 0 0 auto;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 7px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #374151;
+    }
+
+    input[type="file"], input[type="number"], input[type="text"], select {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px 13px;
+      font-size: 15px;
+      background: #fff;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.5;
+      margin: 8px 0 0;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none;
+    }
+
+    .primary { background: #2563eb; color: #fff; }
+    .secondary { background: #e5e7eb; color: #111827; }
+    .warning { background: #fef3c7; color: #92400e; }
+    .danger { background: #fee2e2; color: #991b1b; }
+    .full { grid-column: 1 / -1; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .summary .box {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 15px;
+      min-height: 86px;
+    }
+
+    .summary .num {
+      font-size: 25px;
+      font-weight: 950;
+      color: #1d4ed8;
+      margin-bottom: 4px;
+      letter-spacing: -0.03em;
+    }
+
+    .summary .txt {
+      color: #6b7280;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .draw-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      border-radius: 16px;
+      padding: 13px 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .info-box strong { display: block; margin-bottom: 2px; }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #1e40af;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .tab.active {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      max-height: 570px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+
+    th, td {
+      padding: 12px 13px;
+      border-bottom: 1px solid #eef2f7;
+      text-align: left;
+      font-size: 14px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f8fafc;
+      color: #374151;
+      font-size: 13px;
+    }
+
+    tr:hover td { background: #f9fafb; }
+
+    .status-win,
+    .status-wait,
+    .status-remove {
+      display: inline-flex;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .status-win { background: #dcfce7; color: #166534; }
+    .status-wait { background: #fef3c7; color: #92400e; }
+    .status-remove { background: #fee2e2; color: #991b1b; }
+
+    .empty {
+      padding: 50px 20px;
+      text-align: center;
+      color: #6b7280;
+      background: #fff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 16px;
+      line-height: 1.6;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 13px 14px;
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .error {
+      margin-top: 14px;
+      padding: 13px 14px;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .small-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .small-btns button {
+      padding: 9px 12px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .draw-info { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .hero { padding: 24px 20px; }
+      .hero h1 { font-size: 24px; }
+      .summary { grid-template-columns: 1fr; }
+      .buttons { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>독서실 좌석 추첨 프로그램</h1>
+      <p>엑셀 명부를 업로드하고 좌석 수를 입력하면, 중복 신청자를 정리한 뒤 당첨자와 예비 당첨자를 자동 추첨합니다.</p>
+      <div class="feature-list">
+        <span class="feature-chip">중복 제거</span>
+        <span class="feature-chip">추첨 시간 기록</span>
+        <span class="feature-chip">결과 엑셀 다운로드</span>
+        <span class="feature-chip">재추첨</span>
+        <span class="feature-chip">좌석번호 자동 부여</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <aside class="card">
+        <h2>추첨 설정</h2>
+
+        <div class="step"><span class="badge">1</span> 엑셀 명부 업로드</div>
+        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+        <p class="hint">첫 번째 시트를 기준으로 불러옵니다. 첫 줄은 제목 행으로 인식합니다.</p>
+
+        <div class="step"><span class="badge">2</span> 좌석 수 입력</div>
+        <label for="seatCount">좌석 개수</label>
+        <input id="seatCount" type="number" min="1" placeholder="예: 30" />
+        <p class="hint">좌석 수만큼 당첨자를 선정하고, 나머지 인원은 예비 순번으로 정리합니다.</p>
+
+        <div class="step"><span class="badge">3</span> 중복 제거 설정</div>
+        <label for="dedupeColumn">중복 제거 기준</label>
+        <select id="dedupeColumn" disabled>
+          <option value="">엑셀 업로드 후 선택 가능</option>
+        </select>
+        <p class="hint">학번, 회원번호, 연락처처럼 개인을 식별할 수 있는 컬럼을 선택하면 같은 사람은 1명만 인정됩니다.</p>
+
+        <div class="step"><span class="badge">4</span> 좌석번호 표기</div>
+        <label for="seatPrefix">좌석번호 접두어</label>
+        <input id="seatPrefix" type="text" value="좌석" placeholder="예: 좌석, A, 열람실" />
+        <p class="hint">예: 좌석 1, 좌석 2처럼 1번부터 순차 배정됩니다.</p>
+
+        <div class="buttons">
+          <button id="drawBtn" class="primary" disabled>추첨하기</button>
+          <button id="redrawBtn" class="warning" disabled>재추첨</button>
+          <button id="downloadBtn" class="primary full" disabled>결과 엑셀 다운로드</button>
+          <button id="sampleBtn" class="secondary">샘플 명부 다운로드</button>
+          <button id="resetBtn" class="danger">초기화</button>
+        </div>
+
+        <div id="notice" class="notice">
+          사용 순서: 엑셀 업로드 → 좌석 개수 입력 → 중복 기준 선택 → 추첨하기<br />
+          재추첨을 누르면 기존 결과가 새 랜덤 결과로 대체되고, 추첨 이력에 시간이 남습니다.
+        </div>
+        <div id="errorBox" class="error"></div>
+      </aside>
+
+      <section class="card">
+        <div class="summary">
+          <div class="box">
+            <div id="totalCount" class="num">0</div>
+            <div class="txt">전체 신청자</div>
+          </div>
+          <div class="box">
+            <div id="validCount" class="num">0</div>
+            <div class="txt">중복 제거 후</div>
+          </div>
+          <div class="box">
+            <div id="duplicateCount" class="num">0</div>
+            <div class="txt">중복 제외</div>
+          </div>
+          <div class="box">
+            <div id="winnerCount" class="num">0</div>
+            <div class="txt">당첨자</div>
+          </div>
+          <div class="box">
+            <div id="waitCount" class="num">0</div>
+            <div class="txt">예비자</div>
+          </div>
+        </div>
+
+        <div class="draw-info">
+          <div class="info-box">
+            <strong>최근 추첨 시간</strong>
+            <span id="lastDrawTimeText">아직 추첨 전입니다.</span>
+          </div>
+          <div class="info-box">
+            <strong>최근 추첨 요약</strong>
+            <span id="lastDrawSummaryText">명부를 업로드하고 추첨을 진행해 주세요.</span>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="tabs">
+            <div id="tabPreview" class="tab active">명부 미리보기</div>
+            <div id="tabDuplicates" class="tab">중복 제외자</div>
+            <div id="tabWinners" class="tab">당첨자</div>
+            <div id="tabWait" class="tab">예비 당첨자</div>
+            <div id="tabAll" class="tab">전체 결과</div>
+            <div id="tabLog" class="tab">추첨 이력</div>
+          </div>
+          <div class="small-btns">
+            <button id="copyBtn" class="secondary" disabled>현재 표 복사</button>
+          </div>
+        </div>
+
+        <div id="contentArea" class="empty">
+          아직 업로드된 명부가 없습니다.
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const seatCountInput = document.getElementById("seatCount");
+    const dedupeColumnSelect = document.getElementById("dedupeColumn");
+    const seatPrefixInput = document.getElementById("seatPrefix");
+    const drawBtn = document.getElementById("drawBtn");
+    const redrawBtn = document.getElementById("redrawBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const sampleBtn = document.getElementById("sampleBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const contentArea = document.getElementById("contentArea");
+    const errorBox = document.getElementById("errorBox");
+
+    const totalCountEl = document.getElementById("totalCount");
+    const validCountEl = document.getElementById("validCount");
+    const duplicateCountEl = document.getElementById("duplicateCount");
+    const winnerCountEl = document.getElementById("winnerCount");
+    const waitCountEl = document.getElementById("waitCount");
+    const lastDrawTimeText = document.getElementById("lastDrawTimeText");
+    const lastDrawSummaryText = document.getElementById("lastDrawSummaryText");
+
+    const tabs = {
+      preview: document.getElementById("tabPreview"),
+      duplicates: document.getElementById("tabDuplicates"),
+      winners: document.getElementById("tabWinners"),
+      wait: document.getElementById("tabWait"),
+      all: document.getElementById("tabAll"),
+      log: document.getElementById("tabLog")
+    };
+
+    let rawRows = [];
+    let headers = [];
+    let validRows = [];
+    let duplicateRows = [];
+    let winners = [];
+    let waitList = [];
+    let lotteryLogs = [];
+    let currentView = "preview";
+    let lastDrawTime = "";
+    let drawRound = 0;
+
+    fileInput.addEventListener("change", handleFileUpload);
+    seatCountInput.addEventListener("input", updateButtonState);
+    dedupeColumnSelect.addEventListener("change", applyDedupeAndRender);
+    drawBtn.addEventListener("click", () => runLottery("최초 추첨"));
+    redrawBtn.addEventListener("click", () => runLottery("재추첨"));
+    resetBtn.addEventListener("click", resetAll);
+    downloadBtn.addEventListener("click", downloadResult);
+    sampleBtn.addEventListener("click", downloadSample);
+    copyBtn.addEventListener("click", copyCurrentTable);
+
+    tabs.preview.addEventListener("click", () => switchView("preview"));
+    tabs.duplicates.addEventListener("click", () => switchView("duplicates"));
+    tabs.winners.addEventListener("click", () => switchView("winners"));
+    tabs.wait.addEventListener("click", () => switchView("wait"));
+    tabs.all.addEventListener("click", () => switchView("all"));
+    tabs.log.addEventListener("click", () => switchView("log"));
+
+    function showError(message) {
+      errorBox.style.display = "block";
+      errorBox.textContent = message;
+    }
+
+    function clearError() {
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+    }
+
+    function handleFileUpload(event) {
+      clearError();
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[firstSheetName];
+          const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+          if (!json.length) {
+            showError("엑셀 파일에 읽을 수 있는 명부 데이터가 없습니다.");
+            return;
+          }
+
+          rawRows = json.map((row, index) => ({
+            __originalNo: index + 1,
+            ...row
+          }));
+
+          headers = Object.keys(json[0]);
+          setupDedupeSelect();
+          clearResultsOnly();
+          applyDedupeAndRender();
+          switchView("preview");
+          updateButtonState();
+        } catch (err) {
+          showError("파일을 읽는 중 오류가 발생했습니다. .xlsx, .xls, .csv 형식인지 확인해 주세요.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function setupDedupeSelect() {
+      dedupeColumnSelect.disabled = false;
+      dedupeColumnSelect.innerHTML = "";
+
+      const noDedupe = document.createElement("option");
+      noDedupe.value = "";
+      noDedupe.textContent = "중복 제거 안 함";
+      dedupeColumnSelect.appendChild(noDedupe);
+
+      headers.forEach(header => {
+        const option = document.createElement("option");
+        option.value = header;
+        option.textContent = header;
+        dedupeColumnSelect.appendChild(option);
+      });
+
+      const recommended = headers.find(header => {
+        const h = String(header).toLowerCase();
+        return h.includes("학번") || h.includes("회원") || h.includes("학생") || h.includes("id") || h.includes("번호") || h.includes("연락") || h.includes("전화") || h.includes("휴대폰") || h.includes("핸드폰") || h.includes("mobile") || h.includes("phone");
+      });
+
+      if (recommended) dedupeColumnSelect.value = recommended;
+    }
+
+    function applyDedupeAndRender() {
+      const key = dedupeColumnSelect.value;
+      clearResultsOnly();
+
+      if (!key) {
+        validRows = [...rawRows];
+        duplicateRows = [];
+      } else {
+        const seen = new Map();
+        validRows = [];
+        duplicateRows = [];
+
+        rawRows.forEach(row => {
+          const value = normalize(row[key]);
+          if (!value) {
+            validRows.push(row);
+            return;
+          }
+
+          if (seen.has(value)) {
+            duplicateRows.push({
+              제외사유: `${key} 중복`,
+              중복기준값: row[key],
+              최초인정행: seen.get(value),
+              제외된원본행: row.__originalNo,
+              ...cleanRow(row)
+            });
+          } else {
+            seen.set(value, row.__originalNo);
+            validRows.push(row);
+          }
+        });
+      }
+
+      updateSummary();
+      renderCurrentView();
+      updateButtonState();
+    }
+
+    function normalize(value) {
+      return String(value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    }
+
+    function clearResultsOnly() {
+      winners = [];
+      waitList = [];
+      lastDrawTime = "";
+      drawRound = 0;
+      lotteryLogs = [];
+      downloadBtn.disabled = true;
+      redrawBtn.disabled = true;
+      lastDrawTimeText.textContent = "아직 추첨 전입니다.";
+      lastDrawSummaryText.textContent = "명부를 업로드하고 추첨을 진행해 주세요.";
+    }
+
+    function updateButtonState() {
+      const seatCount = Number(seatCountInput.value);
+      const canDraw = validRows.length > 0 && Number.isInteger(seatCount) && seatCount > 0;
+      drawBtn.disabled = !canDraw;
+      redrawBtn.disabled = !(canDraw && winners.length > 0);
+      copyBtn.disabled = getCurrentRows().length === 0;
+    }
+
+    function runLottery(type) {
+      clearError();
+      const seatCount = Number(seatCountInput.value);
+
+      if (!validRows.length) {
+        showError("먼저 엑셀 명부를 업로드해 주세요.");
+        return;
+      }
+
+      if (!Number.isInteger(seatCount) || seatCount < 1) {
+        showError("좌석 개수는 1 이상의 숫자로 입력해 주세요.");
+        return;
+      }
+
+      const shuffled = secureShuffle([...validRows]);
+      const prefix = seatPrefixInput.value.trim() || "좌석";
+      lastDrawTime = formatDateTime(new Date());
+      drawRound += 1;
+
+      winners = shuffled.slice(0, seatCount).map((row, index) => ({
+        추첨회차: drawRound,
+        추첨구분: type,
+        추첨순번: index + 1,
+        좌석번호: `${prefix} ${index + 1}`,
+        결과: "당첨",
+        추첨일시: lastDrawTime,
+        ...cleanRow(row)
+      }));
+
+      waitList = shuffled.slice(seatCount).map((row, index) => ({
+        추첨회차: drawRound,
+        추첨구분: type,
+        예비순번: index + 1,
+        결과: `예비 ${index + 1}번`,
+        추첨일시: lastDrawTime,
+        ...cleanRow(row)
+      }));
+
+      lotteryLogs.unshift({
+        추첨회차: drawRound,
+        추첨구분: type,
+        추첨일시: lastDrawTime,
+        전체신청자: rawRows.length,
+        중복제외: duplicateRows.length,
+        추첨대상자: validRows.length,
+        입력좌석수: seatCount,
+        당첨자수: winners.length,
+        예비자수: waitList.length,
+        중복기준: dedupeColumnSelect.value || "중복 제거 안 함",
+        좌석번호표기: prefix
+      });
+
+      updateSummary();
+      updateDrawInfo(type, seatCount);
+      switchView("winners");
+      downloadBtn.disabled = false;
+      redrawBtn.disabled = false;
+      copyBtn.disabled = false;
+    }
+
+    function secureShuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = secureRandomInt(i + 1);
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function secureRandomInt(max) {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const randomBuffer = new Uint32Array(1);
+        const limit = Math.floor(0x100000000 / max) * max;
+        let randomValue;
+        do {
+          window.crypto.getRandomValues(randomBuffer);
+          randomValue = randomBuffer[0];
+        } while (randomValue >= limit);
+        return randomValue % max;
+      }
+      return Math.floor(Math.random() * max);
+    }
+
+    function cleanRow(row) {
+      const cleaned = {};
+      headers.forEach(header => {
+        cleaned[header] = row[header] ?? "";
+      });
+      return cleaned;
+    }
+
+    function updateSummary() {
+      totalCountEl.textContent = rawRows.length;
+      validCountEl.textContent = validRows.length;
+      duplicateCountEl.textContent = duplicateRows.length;
+      winnerCountEl.textContent = winners.length;
+      waitCountEl.textContent = waitList.length;
+    }
+
+    function updateDrawInfo(type, seatCount) {
+      lastDrawTimeText.textContent = `${lastDrawTime} / ${type} / ${drawRound}회차`;
+      lastDrawSummaryText.textContent = `좌석 ${seatCount}개, 당첨 ${winners.length}명, 예비 ${waitList.length}명, 중복 제외 ${duplicateRows.length}명`;
+    }
+
+    function switchView(view) {
+      currentView = view;
+      Object.values(tabs).forEach(tab => tab.classList.remove("active"));
+      tabs[view].classList.add("active");
+      renderCurrentView();
+      updateButtonState();
+    }
+
+    function renderCurrentView() {
+      if (currentView === "preview") {
+        renderTable(validRows.map(row => cleanRow(row)), "아직 업로드된 명부가 없습니다.");
+      } else if (currentView === "duplicates") {
+        renderTable(duplicateRows, "중복 제외자가 없습니다. 선택한 기준에서 모든 신청자가 유효합니다.");
+      } else if (currentView === "winners") {
+        renderTable(winners, "아직 추첨 결과가 없습니다.");
+      } else if (currentView === "wait") {
+        renderTable(waitList, "예비 당첨자가 없습니다.");
+      } else if (currentView === "all") {
+        renderTable([...winners, ...waitList], "아직 전체 결과가 없습니다.");
+      } else if (currentView === "log") {
+        renderLogs();
+      }
+    }
+
+    function renderTable(rows, emptyMessage) {
+      if (!rows.length) {
+        contentArea.className = "empty";
+        contentArea.textContent = emptyMessage;
+        return;
+      }
+
+      contentArea.className = "table-wrap";
+      const tableHeaders = Object.keys(rows[0]);
+      const thead = tableHeaders.map(header => `<th>${escapeHtml(header)}</th>`).join("");
+      const tbody = rows.map(row => {
+        const cells = tableHeaders.map(header => {
+          const value = row[header] ?? "";
+          if (header === "결과" && String(value).includes("당첨")) {
+            return `<td><span class="status-win">${escapeHtml(value)}</span></td>`;
+          }
+          if (header === "결과" && String(value).includes("예비")) {
+            return `<td><span class="status-wait">${escapeHtml(value)}</span></td>`;
+          }
+          if (header === "제외사유") {
+            return `<td><span class="status-remove">${escapeHtml(value)}</span></td>`;
+          }
+          return `<td>${escapeHtml(value)}</td>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+
+      contentArea.innerHTML = `
+        <table id="currentTable">
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      `;
+    }
+
+    function renderLogs() {
+      if (!lotteryLogs.length) {
+        contentArea.className = "empty";
+        contentArea.textContent = "아직 추첨 이력이 없습니다.";
+        return;
+      }
+
+      contentArea.className = "table-wrap";
+      const rows = lotteryLogs;
+      const tableHeaders = Object.keys(rows[0]);
+      const thead = tableHeaders.map(header => `<th>${escapeHtml(header)}</th>`).join("");
+      const tbody = rows.map(row => {
+        const cells = tableHeaders.map(header => `<td>${escapeHtml(row[header] ?? "")}</td>`).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+
+      contentArea.innerHTML = `
+        <table id="currentTable">
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      `;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function downloadResult() {
+      if (!winners.length && !waitList.length) {
+        showError("다운로드할 추첨 결과가 없습니다.");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const winnerSheet = XLSX.utils.json_to_sheet(winners);
+      const waitSheet = XLSX.utils.json_to_sheet(waitList);
+      const allSheet = XLSX.utils.json_to_sheet([...winners, ...waitList]);
+      const duplicateSheet = XLSX.utils.json_to_sheet(duplicateRows.length ? duplicateRows : [{ 내용: "중복 제외자 없음" }]);
+      const logSheet = XLSX.utils.json_to_sheet(lotteryLogs);
+
+      XLSX.utils.book_append_sheet(wb, winnerSheet, "당첨자");
+      XLSX.utils.book_append_sheet(wb, waitSheet, "예비당첨자");
+      XLSX.utils.book_append_sheet(wb, allSheet, "전체결과");
+      XLSX.utils.book_append_sheet(wb, duplicateSheet, "중복제외자");
+      XLSX.utils.book_append_sheet(wb, logSheet, "추첨이력");
+
+      const fileName = `독서실_좌석추첨결과_${dateForFileName(new Date())}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    }
+
+    function downloadSample() {
+      const sample = [
+        { 이름: "김민준", 학번: "2024001", 연락처: "010-1111-1111", 신청구분: "정기" },
+        { 이름: "이서연", 학번: "2024002", 연락처: "010-2222-2222", 신청구분: "정기" },
+        { 이름: "박도윤", 학번: "2024003", 연락처: "010-3333-3333", 신청구분: "일반" },
+        { 이름: "최하윤", 학번: "2024004", 연락처: "010-4444-4444", 신청구분: "일반" },
+        { 이름: "정지호", 학번: "2024005", 연락처: "010-5555-5555", 신청구분: "정기" },
+        { 이름: "정지호", 학번: "2024005", 연락처: "010-5555-5555", 신청구분: "중복신청" }
+      ];
+
+      const ws = XLSX.utils.json_to_sheet(sample);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "명부");
+      XLSX.writeFile(wb, "독서실_추첨_샘플명부.xlsx");
+    }
+
+    async function copyCurrentTable() {
+      const rows = getCurrentRows();
+      if (!rows.length) {
+        showError("복사할 표가 없습니다.");
+        return;
+      }
+
+      const columns = Object.keys(rows[0]);
+      const text = [
+        columns.join("\t"),
+        ...rows.map(row => columns.map(col => row[col] ?? "").join("\t"))
+      ].join("\n");
+
+      try {
+        await navigator.clipboard.writeText(text);
+        clearError();
+        alert("현재 표가 클립보드에 복사되었습니다.");
+      } catch (err) {
+        showError("브라우저 권한 문제로 복사에 실패했습니다. 표를 직접 드래그해서 복사해 주세요.");
+      }
+    }
+
+    function getCurrentRows() {
+      if (currentView === "preview") return validRows.map(row => cleanRow(row));
+      if (currentView === "duplicates") return duplicateRows;
+      if (currentView === "winners") return winners;
+      if (currentView === "wait") return waitList;
+      if (currentView === "all") return [...winners, ...waitList];
+      if (currentView === "log") return lotteryLogs;
+      return [];
+    }
+
+    function resetAll() {
+      rawRows = [];
+      headers = [];
+      validRows = [];
+      duplicateRows = [];
+      winners = [];
+      waitList = [];
+      lotteryLogs = [];
+      lastDrawTime = "";
+      drawRound = 0;
+
+      fileInput.value = "";
+      seatCountInput.value = "";
+      seatPrefixInput.value = "좌석";
+      dedupeColumnSelect.innerHTML = '<option value="">엑셀 업로드 후 선택 가능</option>';
+      dedupeColumnSelect.disabled = true;
+
+      downloadBtn.disabled = true;
+      redrawBtn.disabled = true;
+      copyBtn.disabled = true;
+      drawBtn.disabled = true;
+      lastDrawTimeText.textContent = "아직 추첨 전입니다.";
+      lastDrawSummaryText.textContent = "명부를 업로드하고 추첨을 진행해 주세요.";
+      clearError();
+      updateSummary();
+      switchView("preview");
+    }
+
+    function formatDateTime(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mm = String(date.getMinutes()).padStart(2, "0");
+      const ss = String(date.getSeconds()).padStart(2, "0");
+      return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+    }
+
+    function dateForFileName(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mm = String(date.getMinutes()).padStart(2, "0");
+      return `${y}${m}${d}_${hh}${mm}`;
+    }
+  </script>
+</body>
+</html>
