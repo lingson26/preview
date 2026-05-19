@@ -372,7 +372,7 @@
 
         <div class="step"><span class="badge">1</span> 엑셀 명부 업로드</div>
         <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
-        <p class="hint">첫 번째 시트를 기준으로 불러옵니다. 첫 줄은 제목 행으로 인식합니다.</p>
+        <p class="hint">첫 번째 시트를 기준으로 불러옵니다. 엑셀 제목 행은 이름, 동, 호수 형식으로 맞춰 주세요.</p>
 
         <div class="step"><span class="badge">2</span> 좌석 수 입력</div>
         <label for="seatCount">좌석 개수</label>
@@ -384,7 +384,7 @@
         <select id="dedupeColumn" disabled>
           <option value="">엑셀 업로드 후 선택 가능</option>
         </select>
-        <p class="hint">학번, 회원번호, 연락처처럼 개인을 식별할 수 있는 컬럼을 선택하면 같은 사람은 1명만 인정됩니다.</p>
+        <p class="hint">기본 권장 기준은 이름 + 동 + 호수입니다. 같은 사람이 같은 동/호수로 중복 신청한 경우 1명만 인정됩니다.</p>
 
         <div class="step"><span class="badge">4</span> 좌석번호 표기</div>
         <label for="seatPrefix">좌석번호 접두어</label>
@@ -577,6 +577,14 @@
       noDedupe.textContent = "중복 제거 안 함";
       dedupeColumnSelect.appendChild(noDedupe);
 
+      const hasAptColumns = ["이름", "동", "호수"].every(column => headers.includes(column));
+      if (hasAptColumns) {
+        const aptOption = document.createElement("option");
+        aptOption.value = "__APT_PERSON__";
+        aptOption.textContent = "이름 + 동 + 호수";
+        dedupeColumnSelect.appendChild(aptOption);
+      }
+
       headers.forEach(header => {
         const option = document.createElement("option");
         option.value = header;
@@ -584,12 +592,16 @@
         dedupeColumnSelect.appendChild(option);
       });
 
-      const recommended = headers.find(header => {
-        const h = String(header).toLowerCase();
-        return h.includes("학번") || h.includes("회원") || h.includes("학생") || h.includes("id") || h.includes("번호") || h.includes("연락") || h.includes("전화") || h.includes("휴대폰") || h.includes("핸드폰") || h.includes("mobile") || h.includes("phone");
-      });
+      if (hasAptColumns) {
+        dedupeColumnSelect.value = "__APT_PERSON__";
+      } else {
+        const recommended = headers.find(header => {
+          const h = String(header).toLowerCase();
+          return h.includes("이름") || h.includes("동") || h.includes("호수") || h.includes("회원") || h.includes("번호") || h.includes("연락") || h.includes("전화") || h.includes("id");
+        });
 
-      if (recommended) dedupeColumnSelect.value = recommended;
+        if (recommended) dedupeColumnSelect.value = recommended;
+      }
     }
 
     function applyDedupeAndRender() {
@@ -605,7 +617,7 @@
         duplicateRows = [];
 
         rawRows.forEach(row => {
-          const value = normalize(row[key]);
+          const value = getDedupeValue(row, key);
           if (!value) {
             validRows.push(row);
             return;
@@ -629,6 +641,17 @@
       updateSummary();
       renderCurrentView();
       updateButtonState();
+    }
+
+    function getDedupeValue(row, key) {
+      if (key === "__APT_PERSON__") {
+        const name = normalize(row["이름"]);
+        const dong = normalize(row["동"]);
+        const ho = normalize(row["호수"]);
+        if (!name && !dong && !ho) return "";
+        return `${name}|${dong}|${ho}`;
+      }
+      return normalize(row[key]);
     }
 
     function normalize(value) {
@@ -875,18 +898,18 @@
 
     function downloadSample() {
       const sample = [
-        { 이름: "김민준", 학번: "2024001", 연락처: "010-1111-1111", 신청구분: "정기" },
-        { 이름: "이서연", 학번: "2024002", 연락처: "010-2222-2222", 신청구분: "정기" },
-        { 이름: "박도윤", 학번: "2024003", 연락처: "010-3333-3333", 신청구분: "일반" },
-        { 이름: "최하윤", 학번: "2024004", 연락처: "010-4444-4444", 신청구분: "일반" },
-        { 이름: "정지호", 학번: "2024005", 연락처: "010-5555-5555", 신청구분: "정기" },
-        { 이름: "정지호", 학번: "2024005", 연락처: "010-5555-5555", 신청구분: "중복신청" }
+        { 이름: "김민준", 동: "101", 호수: "1001" },
+        { 이름: "이서연", 동: "101", 호수: "1002" },
+        { 이름: "박도윤", 동: "102", 호수: "801" },
+        { 이름: "최하윤", 동: "102", 호수: "802" },
+        { 이름: "정지호", 동: "103", 호수: "1201" },
+        { 이름: "정지호", 동: "103", 호수: "1201" }
       ];
 
       const ws = XLSX.utils.json_to_sheet(sample);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "명부");
-      XLSX.writeFile(wb, "독서실_추첨_샘플명부.xlsx");
+      XLSX.writeFile(wb, "독서실_추첨_샘플명부_이름_동_호수.xlsx");
     }
 
     async function copyCurrentTable() {
